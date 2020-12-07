@@ -1,0 +1,21 @@
+version: '3'
+services:
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    volumes:
+      - ./client:/app
+    ports:
+      - 3000:3000
+    restart: on-failure
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: api
+    ports:
+      - 8080:8080
+    restart: on-failure
+    volumes:
+      - ./api:/usr/src/app
