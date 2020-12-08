@@ -1,0 +1,11 @@
+.header {
+  display: flex !important;
+}
+
+.header-logo {
+  display: inline;
+}
+
+.header-avatar {
+  margin-left: auto !important;
+}
