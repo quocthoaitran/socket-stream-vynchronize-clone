@@ -79,7 +79,6 @@ export default function Room({ socket }) {
     });
 
     socket.on('confirm_request', data => {
-      console.log("confirm", data)
       setIsModalVisible(true)
       setClientRequest(data)
     })
@@ -107,7 +106,7 @@ export default function Room({ socket }) {
 
   useEffect(() => {
     if (reactPlayerRef.current && !isHost) {
-      reactPlayerRef.current.seekTo(currVideo?.time || 0, "seconds");
+      // reactPlayerRef.current.seekTo(currVideo?.time || 0, "seconds");
     }
     return () => {};
   }, [currVideo]);
@@ -146,10 +145,6 @@ export default function Room({ socket }) {
       let currTime = Math.round(reactPlayerRef.current.getCurrentTime());
       socket.emit("sync_video", { playing: true, time: currTime });
     }
-  }
-
-  const handleOnSeek = (e) => {
-    console.log("Seekkkk", e);
   }
 
   const handleChangeYoutubeLink = (e) => {
@@ -245,7 +240,7 @@ export default function Room({ socket }) {
   }
 
   return (
-    <div className="container-lg">
+    <div>
       <Modal
         title="Confirm Request"
         visible={isModalVisible}
@@ -254,11 +249,8 @@ export default function Room({ socket }) {
       >
         <p>The {clientRequest?.username} was request to host this room</p>
       </Modal>
-      {
-        console.log("currrrrrrrrrrr",currVideo)
-      }
       <Row>
-        <Col span={8} offset={4}>
+        <Col span={12}>
           <h3>Current Host: {hostName}</h3>
           <Row gutter={[10,10]}><ReactPlayer
             ref={reactPlayerRef}
@@ -269,7 +261,6 @@ export default function Room({ socket }) {
             played
             controls={isHost}
             onEnded={() => handleEndedVideo()}
-            onSeek={(e) => handleOnSeek(e)}
             config={{
               youtube: {
                 playerVars: {
