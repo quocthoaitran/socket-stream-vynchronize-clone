@@ -24,10 +24,6 @@ app.get("/", (req, res) => {
   res.json("It's working!")
 });
 
-// app.get('/:room', (req, res) => {
-//   res.redirect(process.env.URL_CLIENT)
-// })
-
 server.listen(PORT, () => {
   console.log(`App listening on port ${PORT}!!`)
 });
@@ -39,12 +35,13 @@ io.on("connection", (socket) => {
   console.log(
     `The id ${socket.id} was connected. Connections: ${connections.length} sockets connected`
   );
+  // updateRooms()
 
   socket.on("init_user", (username) => {
     socket.username = username
     users.push(username)
     updateRooms()
-  });
+  })
 
   socket.on("join_room", (data) => {
     if (socket.roomID !== undefined) {
@@ -52,7 +49,6 @@ io.on("connection", (socket) => {
       var id = socket.id;
       var roomID = userRooms[id];
       var room = io.sockets.adapter.rooms.get(`room-${roomID}`)
-
       if (room !== undefined) {
         if (socket.id === room.host) {
           room.users.splice(room.users.indexOf(socket), 1)
@@ -71,11 +67,21 @@ io.on("connection", (socket) => {
         }
 
         if (room.users.length == 0) {
-          rooms.splice(rooms.indexOf(roomID))
+          if (rooms.indexOf(roomID) != -1) {
+            rooms.splice(rooms.indexOf(roomID), 1)
+          }
+          // rooms.splice(rooms.indexOf(roomID))
           updateRooms()
         }
+      } else {
+        if (rooms.indexOf(roomID) != -1) {
+          rooms.splice(rooms.indexOf(roomID), 1)
+        }
+        updateRooms()
       }
+      socket.leave(`room-${socket.roomID}`)
       updateRooms()
+      delete userRooms[id]
     }
 
     socket.roomID = data.roomID
@@ -116,7 +122,8 @@ io.on("connection", (socket) => {
       io.sockets.adapter.rooms.get(`room-${socket.roomID}`).queue = []
 
       io.sockets.adapter.rooms.get(`room-${socket.roomID}`).currVideo = {
-        url: "https://www.youtube.com/watch?v=mlFiwKicz7I",
+        url: "https://www.youtube.com/watch?v=is_5Ikji_FU",
+        title: "Em là của anh - KARIK",
         time: 0,
         playing: true,
       };
@@ -190,7 +197,8 @@ io.on("connection", (socket) => {
       io.sockets.adapter.rooms.get(`room-${socket.roomID}`).queue = []
 
       io.sockets.adapter.rooms.get(`room-${socket.roomID}`).currVideo = {
-        url: "https://www.youtube.com/watch?v=mlFiwKicz7I",
+        url: "https://www.youtube.com/watch?v=is_5Ikji_FU",
+        title: "Em là của anh - KARIK",
         time: 0,
         playing: true,
       };
@@ -275,6 +283,7 @@ io.on("connection", (socket) => {
     ) {
       io.sockets.adapter.rooms.get(`room-${socket.roomID}`).currVideo = {
         url: data.url,
+        title: data.title,
         time: 0,
         playing: true,
       };
@@ -324,7 +333,9 @@ io.on("connection", (socket) => {
         updateRooms()
       }
     } else {
-      rooms.splice(rooms.indexOf(roomID))
+      if (rooms.indexOf(roomID) != -1) {
+        rooms.splice(rooms.indexOf(roomID))
+      }
       updateRooms()
     }
     delete userRooms[id];
@@ -344,11 +355,20 @@ io.on("connection", (socket) => {
       updateHostRoom(socket.roomID, data.username)
     }
     io.to(data.id).emit("answer_request", data.isConfirm)
-  });
+  })
+
+  socket.on('get_rooms', () => {
+    updateRooms()
+  })
 
   //Update all rooms
   function updateRooms() {
-    io.sockets.emit("update_list_room", rooms)
+    listRooms = rooms.map(room => ({
+        room: room,
+        hostName: io.sockets.adapter.rooms.get(`room-${room}`).hostName,
+        currVideo: io.sockets.adapter.rooms.get(`room-${room}`).currVideo
+    }))
+    io.sockets.emit("update_list_room", listRooms)
   }
 
   //Update HostRoom
@@ -367,6 +387,7 @@ io.on("connection", (socket) => {
         "change_video_client",
         io.sockets.adapter.rooms.get(`room-${roomID}`).currVideo
       );
+    updateRooms()
   }
 
   // Update the room usernames

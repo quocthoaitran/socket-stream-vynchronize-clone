@@ -8,4 +8,5 @@
 
 .header-avatar {
   margin-left: auto !important;
+  cursor: pointer;
 }

@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 import {
   Typography,
   Layout,
@@ -11,23 +10,22 @@ import {
   Input,
   Empty,
   notification,
+  Tooltip,
 } from "antd";
-import Login from "./Login";
 import io from "socket.io-client";
 import Room from "./Room";
 import {
   UserOutlined,
-  LaptopOutlined,
-  NotificationOutlined,
 } from "@ant-design/icons";
 import "./App.css";
+import "antd/dist/antd.css";
 
 const socket =
   localStorage.getItem("socket") ||
   io(`${window.location.hostname}:8080`, {
     transports: ["websocket", "polling", "flashsocket"],
   });
-const { Title, Text } = Typography;
+const { Title } = Typography;
 const { Header, Content, Footer, Sider } = Layout;
 
 function App() {
@@ -36,16 +34,18 @@ function App() {
   const [listRoom, setListRoom] = useState([]);
   const [roomID, setRoomID] = useState("");
   useEffect(() => {
-    if (!localStorage.getItem('username')) {
+    if (!localStorage.getItem("username")) {
       setIsModalUsernameVisible(true);
     } else {
-      socket.emit("init_user", localStorage.getItem('username'))
-      setUsername(localStorage.getItem('username'))
+      socket.emit("init_user", localStorage.getItem("username"));
+      setUsername(localStorage.getItem("username"));
     }
 
     socket.on("update_list_room", (rooms) => {
       setListRoom(rooms);
     });
+
+    socket.emit("get_rooms");
     return () => {};
   }, []);
 
@@ -61,20 +61,26 @@ function App() {
         message: "Invalid roomID",
         description: "Please enter a room ID",
         duration: 2,
-      })
-      return
+      });
+      return;
     }
-    socket.emit('join_room', {roomID})
-    setRoomID('')
-  }
+    socket.emit("join_room", { roomID });
+    setRoomID("");
+  };
+
+  const handleJoinRoom = (room) => {
+    socket.emit("join_room", { roomID: room });
+  };
 
   return (
-    <Router>
+    <>
+    {console.log("idddddddddddddddddddddddd",socket.roomID)}
       <Modal
         title="Enter Username"
         visible={isModalUsernameVisible}
         onOk={handleChangeUsername}
         cancelButtonProps={{ disabled: true }}
+        closable={false}
       >
         <p>We can call you are:</p>
         <Input value={username} onChange={(e) => setUsername(e.target.value)} />
@@ -86,7 +92,11 @@ function App() {
             Listen Together
           </Title>
           <Space align="center" className="header-avatar">
-            <Title type="warning" level={3}>
+            <Title
+              type="warning"
+              level={3}
+              onClick={() => setIsModalUsernameVisible(true)}
+            >
               {username} <Avatar icon={<UserOutlined />} />
             </Title>
           </Space>
@@ -96,39 +106,51 @@ function App() {
             className="site-layout-background"
             style={{ padding: "24px 0" }}
           >
-            <Sider className="site-layout-background" width={300}>
+            <Sider className="site-layout-background" width={300} collapsedWidth={0} breakpoint={'lg'}>
+              <Input
+                placeholder="Enter room ID"
+                value={roomID}
+                onChange={(e) => {
+                  setRoomID(e.target.value);
+                }}
+                suffix={
+                  <Button type="primary" onClick={handleCreateRoom}>
+                    Create/Join room
+                  </Button>
+                }
+              />
               <Menu
                 mode="inline"
                 // defaultSelectedKeys={['1']}
                 // defaultOpenKeys={['sub1']}
                 style={{ height: "100%" }}
               >
-                <Input
-                  placeholder="Enter room ID"
-                  value={roomID}
-                  onChange={(e) => {
-                    setRoomID(e.target.value);
-                  }}
-                  suffix={<Button type="primary" onClick={handleCreateRoom}>Create/Join room</Button>}
-                />
                 {listRoom.length ? (
                   listRoom.map((room, index) => {
-                    return <Menu.Item key={index}>{room}</Menu.Item>;
+                    return (
+                      <Menu.Item key={index}>
+                        <Tooltip
+                          title={`${room.hostName} - ${room.currVideo.title}`}
+                          placement="top"
+                        >
+                          <span
+                            key={index}
+                            onClick={() => handleJoinRoom(room.room)}
+                          >
+                            {room.room}
+                          </span>
+                        </Tooltip>
+                      </Menu.Item>
+                    );
                   })
                 ) : (
-                  <Empty description="No room available" />
+                  <Menu.Item>
+                    <Empty description="No room available" />
+                  </Menu.Item>
                 )}
               </Menu>
             </Sider>
             <Content style={{ padding: "0 24px", minHeight: 280 }}>
-              {/* <Switch>
-                <Route path="/room">
-                  <Room socket={socket}></Room>
-                </Route>
-                <Route path="/" exact>
-                  <Login socket={socket}></Login>
-                </Route>
-              </Switch> */}
               {socket && <Room socket={socket}></Room>}
             </Content>
           </Layout>
@@ -137,19 +159,7 @@ function App() {
           Ant Design ©2018 Created by Ant UED
         </Footer>
       </Layout>
-      {/* <div className="App">
-        <Divider><Title><Text type="success">Listen Together</Text></Title></Divider>
-      </div>
-
-      <Switch>
-        <Route path="/room">
-          <Room socket={socket}></Room>
-        </Route>
-        <Route path="/" exact>
-          <Login socket={socket}></Login>
-        </Route>
-      </Switch> */}
-    </Router>
+      </>
   );
 }
 
